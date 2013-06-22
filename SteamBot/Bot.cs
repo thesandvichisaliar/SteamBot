@@ -69,12 +69,16 @@ namespace SteamBot
         // Log level to use for this bot
         Log.LogLevel LogLevel;
 
+        // Log file name to use for this bot
+        string LogFile;
+
         // The number, in milliseconds, between polls for the trade.
         int TradePollingInterval;
 
         string sessionId;
         string token;
         bool isprocess;
+        public bool IsRunning = false;
 
         public string AuthCode { get; set; }
 
@@ -112,7 +116,8 @@ namespace SteamBot
                 Console.WriteLine("Invalid LogLevel provided in configuration. Defaulting to 'INFO'");
                 LogLevel = Log.LogLevel.Info;
             }
-            log          = new Log (config.LogFile, this.DisplayName, LogLevel);
+            this.LogFile = config.LogFile;
+            log          = new Log (this.LogFile, this.DisplayName, LogLevel);
             CreateHandler = handlerCreator;
             BotControlClass = config.BotControlClass;
 
@@ -149,6 +154,8 @@ namespace SteamBot
         /// <returns><c>true</c>. See remarks</returns>
         public bool StartBot()
         {
+            IsRunning = true;
+
             log.Info("Connecting...");
 
             if (!backgroundWorker.IsBusy)
@@ -168,10 +175,53 @@ namespace SteamBot
         /// </summary>
         public void StopBot()
         {
-            log.Debug("Tryring to shut down bot thread.");
+            IsRunning = false;
+
+            log.Debug("Trying to shut down bot thread.");
             SteamClient.Disconnect();
 
             backgroundWorker.CancelAsync();
+        }
+
+        /// <summary>
+        /// Reinitializes the log, SteamClient, the callback thread, and then connects to Steam via SteamKit2
+        /// </summary>
+        /// <remarks>
+        /// This does return. However, it returns with the old thread. It is best to run this where
+        /// it can die peacefully, letting the new thread operate alone.
+        /// </remarks>
+        /// <returns><c>false</c>if the bot is already running, otherwise <c>true</c></returns>
+        public bool RestartBot()
+        {
+            if (IsRunning)
+                return false;
+
+            log.Dispose();
+            log = new Log(LogFile, this.DisplayName, LogLevel);
+
+            // Hacking around https
+            ServicePointManager.ServerCertificateValidationCallback += SteamWeb.ValidateRemoteCertificate;
+
+            log.Debug("Initializing Steam Bot...");
+            SteamClient = new SteamClient();
+            SteamTrade = SteamClient.GetHandler<SteamTrading>();
+            SteamUser = SteamClient.GetHandler<SteamUser>();
+            SteamFriends = SteamClient.GetHandler<SteamFriends>();
+            SteamGameCoordinator = SteamClient.GetHandler<SteamGameCoordinator>();
+
+            backgroundWorker = new BackgroundWorker { WorkerSupportsCancellation = true };
+            backgroundWorker.DoWork += BackgroundWorkerOnDoWork;
+            backgroundWorker.RunWorkerCompleted += BackgroundWorkerOnRunWorkerCompleted;
+            backgroundWorker.RunWorkerAsync();
+
+            IsRunning = true;
+
+            log.Info("Connecting...");
+            SteamClient.Connect();
+
+            log.Success("Done Loading Bot!");
+
+            return true;
         }
 
         /// <summary>
@@ -658,7 +708,9 @@ namespace SteamBot
             while (!backgroundWorker.CancellationPending)
             {
                 CallbackMsg msg = SteamClient.WaitForCallback(true);
-                HandleSteamMessage(msg);
+                // Handling a callback in a cancelled thread will result in a log disposed error.
+                if (!backgroundWorker.CancellationPending)
+                    HandleSteamMessage(msg);
             }
         }
 
