@@ -19,8 +19,8 @@ namespace SteamBot
         private const string AddAllSubCmd = "all";
         private const string HelpCmd = "help";
 
-        public AdminUserHandler(Bot bot, SteamID sid)
-            : base(bot, sid)
+        public AdminUserHandler(Bot bot, SteamID sid, Configuration.Optional options)
+            : base(bot, sid, options)
         {
             Bot.GetInventory();
             Bot.GetOtherInventory(OtherSID);

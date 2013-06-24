@@ -44,7 +44,9 @@ namespace SteamBot
         // The log for the bot.  This logs with the bot's display name.
         public Log log;
 
-        public delegate UserHandler UserHandlerCreator(Bot bot, SteamID id);
+        // Custom Options available in the UserHandler
+        private Configuration.Optional options;
+        public delegate UserHandler UserHandlerCreator(Bot bot, SteamID id, Configuration.Optional options);
         public UserHandlerCreator CreateHandler;
         Dictionary<ulong, UserHandler> userHandlers = new Dictionary<ulong, UserHandler>();
 
@@ -87,7 +89,7 @@ namespace SteamBot
 
         private BackgroundWorker backgroundWorker;
 
-        public Bot(Configuration.BotInfo config, string apiKey, UserHandlerCreator handlerCreator, bool debug = false, bool process = false)
+        public Bot(Configuration.Optional options, Configuration.BotInfo config, string apiKey, UserHandlerCreator handlerCreator, bool debug = false, bool process = false)
         {
             logOnDetails = new SteamUser.LogOnDetails
             {
@@ -101,6 +103,7 @@ namespace SteamBot
             DisplayNamePrefix = config.DisplayNamePrefix;
             TradePollingInterval = config.TradePollingInterval <= 100 ? 800 : config.TradePollingInterval;
             Admins       = config.Admins;
+            this.options = options;
             this.apiKey  = apiKey;
             this.isprocess = process;
             try
@@ -168,7 +171,7 @@ namespace SteamBot
         /// </summary>
         public void StopBot()
         {
-            log.Debug("Tryring to shut down bot thread.");
+            log.Debug("Trying to shut down bot thread.");
             SteamClient.Disconnect();
 
             backgroundWorker.CancelAsync();
@@ -513,7 +516,7 @@ namespace SteamBot
         {
             if (!userHandlers.ContainsKey (sid))
             {
-                userHandlers [sid.ConvertToUInt64 ()] = CreateHandler (this, sid);
+                userHandlers [sid.ConvertToUInt64 ()] = CreateHandler (this, sid, options);
             }
             return userHandlers [sid.ConvertToUInt64 ()];
         }

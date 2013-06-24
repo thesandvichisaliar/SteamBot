@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using SteamKit2;
 using SteamTrade;
+using System;
 
 namespace SteamBot
 {
@@ -12,11 +13,13 @@ namespace SteamBot
     {
         protected Bot Bot;
         protected SteamID OtherSID;
+        protected static Configuration.Optional Options;
 
-        public UserHandler (Bot bot, SteamID sid)
+        public UserHandler (Bot bot, SteamID sid, Configuration.Optional options)
         {
             Bot = bot;
             OtherSID = sid;
+            Console.WriteLine("Userhandler created");
         }
 
         /// <summary>

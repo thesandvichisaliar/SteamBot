@@ -193,7 +193,7 @@ namespace SteamBot
         /// <param name="sid">The steamId.</param>
         /// <returns>A <see cref="UserHandler"/> instance.</returns>
         /// <exception cref="ArgumentException">Thrown if the control class type does not exist.</exception>
-        public static UserHandler UserHandlerCreator(Bot bot, SteamID sid)
+        public static UserHandler UserHandlerCreator(Bot bot, SteamID sid, Configuration.Optional options)
         {
             Type controlClass = Type.GetType(bot.BotControlClass);
 
@@ -201,7 +201,7 @@ namespace SteamBot
                 throw new ArgumentException("Configured control class type was null. You probably named it wrong in your configuration file.", "bot");
 
             return (UserHandler)Activator.CreateInstance(
-                    controlClass, new object[] { bot, sid });
+                    controlClass, new object[] { bot, sid, options });
         }
 
         #region Nested RunningBot class
@@ -319,7 +319,8 @@ namespace SteamBot
             private void SpawnBotThread(Configuration.BotInfo botConfig)
             {
                 // the bot object itself is threaded so we just build it and start it.
-                Bot b = new Bot(botConfig,
+                Bot b = new Bot(config.Options,
+                                botConfig,
                                 config.ApiKey,
                                 UserHandlerCreator,
                                 true);

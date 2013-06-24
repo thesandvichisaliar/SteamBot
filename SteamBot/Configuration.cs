@@ -18,7 +18,7 @@ namespace SteamBot
             Configuration config =  JsonConvert.DeserializeObject<Configuration>(json);
 
             config.Admins = config.Admins ?? new ulong[0];
-
+            
             // merge bot-specific admins with global admins
             foreach (BotInfo bot in config.Bots)
             {
@@ -92,6 +92,14 @@ namespace SteamBot
         /// </value>
         public bool AutoStartAllBots { get; set; }
 
+        /// <summary>
+        /// Gets or sets the user's custom options.
+        /// </summary>
+        /// <value>
+        /// A class of custom options that can be accessed from the UserHandler.
+        /// </value>
+        public Optional Options { get; set; }
+
         #endregion Top-level config properties
 
         /// <summary>
@@ -113,6 +121,11 @@ namespace SteamBot
             }
 
             return sb.ToString();
+        }
+
+        public class Optional
+        {
+            // Optional variables here.
         }
 
         public class BotInfo

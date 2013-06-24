@@ -8,7 +8,7 @@ namespace SteamBot
     {
         public int ScrapPutUp;
 
-        public SimpleUserHandler (Bot bot, SteamID sid) : base(bot, sid) {}
+        public SimpleUserHandler (Bot bot, SteamID sid, Configuration.Optional options) : base(bot, sid, options) {}
 
         public override bool OnFriendAdd () 
         {
